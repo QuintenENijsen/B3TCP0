@@ -54,16 +54,39 @@ stringToInt = read
 data Tree a = Bin (Tree a) (Tree a) | Tip a
 
 information :: Tree a -> [a]
-information Tip a = [a]
+information (Tip a) = [a]
 information (Bin t1 t2) = information t1 ++ information t2
 
 --Question 5: pack
 
 pack :: Tree Int -> String 
-pack Tip x = show x
+pack (Tip x) = show x
 pack (Bin t1 t2) = '{' : pack t1 ++ "," ++ pack t2 ++ "}"
 
 --Question 6: unpack
 
+--Find the entire node, by matching the number of opening curly brackets and closing
+findNode :: String -> (String, String)
+findNode s = 
+  let (leftNode, rightNode) = takeNode s 0 ([], [])
+  in  (leftNode, tail rightNode)
+  where 
+    takeNode :: String -> Int -> (String, String) -> (String, String)
+    takeNode [] _ vals = vals
+    takeNode (x:xs) num (n1, n2)=
+      case x of 
+        '{'       -> takeNode xs (num + 1) (x:n1, n2)
+        '}'       -> if num == 1 
+                       then (x:n1, xs ++ n2)
+                       else takeNode xs (num - 1) (x:n1, n2)
+        otherwise -> takeNode xs num (x:n1, n2)
+
+--Assumption for unpack, no garbage in string.
 unpack :: String -> Tree Int 
-unpack = undefined
+unpack tree 
+  | head tree == '{' = --Behandel als node
+      let lrTree = (init . tail) tree
+          (lTree, rest) = findNode lrTree
+          (rTree, rest') = findNode rest
+      in Bin (unpack lTree) (unpack rTree)
+  | otherwise        = Tip (read tree)
